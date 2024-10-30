@@ -1,0 +1,282 @@
+#include <stdio.h> 
+#include <stdlib.h> 
+#include <stdbool.h> 
+#include <string.h> 
+#include <math.h>
+
+#define BYTE 8
+
+void parity_check(unsigned char data[BYTE], unsigned char parityBit);
+void checksum(unsigned char data[BYTE], unsigned char checksum);
+void two_dimensional_parity(unsigned char data[BYTE][BYTE], unsigned char h_parity[BYTE], unsigned char v_parity[BYTE]);
+void read_parity_check(const char *filename);
+void read_checksum(const char *filename);
+void read_two_dimensional_parity(const char *filename);
+void p_binary(unsigned int value);
+
+int main() {
+    //Parity Check data file
+    printf("** Part 1 - Parity Check Processing **\n\n");
+    read_parity_check("White House Transmission Data - Parity.txt");
+    
+    //Checksum data file
+    printf("\n** Part 2 - Checksum Processing **\n\n");
+    read_checksum("White House Transmission Data - Checksum.txt");
+    
+    //Two-Dimensional Parity Check data file
+    printf("\n** Part 3 - Two-Dimensional Parity Check **\n\n");
+    read_two_dimensional_parity("White House Transmission Data - 2D Parity.txt");
+    
+    return 0;
+}
+
+// Parity Check Function
+void parity_check(unsigned char data[BYTE], unsigned char parityBit) {
+    printf("Transmission line number: 1\n\nData stream: \n");
+    for (int i = 0; i < BYTE; i++) {
+        printf("%d ", data[i]);
+    }
+    printf("\nParity byte: %d\n\n", parityBit);
+
+    for (int i = 0; i < BYTE; i++) {
+        unsigned char byte = data[i];
+        int ones = 0; 
+
+        // Count of 1s in byte
+        for (int k = 0; k < 8; k++) {
+            if (byte % 2 == 1) {
+                ones++;
+            }
+            byte /= 2; 
+        }
+
+        byte = data[i];
+        printf("data item = %d , binary = ", byte);
+
+        unsigned char binary[8] = {0};
+        for (int k = 7; k >= 0; k--) {
+            binary[k] = byte % 2; 
+            byte /= 2; 
+        }
+        for (int k = 0; k < 8; k++) {
+            printf("%d", binary[k]); 
+        }
+        printf("\n");
+
+        if (ones % 2 != parityBit) {
+            printf("Error in transmission byte %d\n\n", i + 1);
+        } else {
+            printf("No error in transmission byte %d\n\n", i + 1);
+        }
+    }
+}
+
+// Checksum Function
+void checksum(unsigned char data[BYTE], unsigned char checksum) {
+    unsigned int sum = 0;
+
+    printf("\nData stream: \n");
+    for (int i = 0; i < BYTE; i++) {
+        printf("%d ", data[i]);
+    }
+    printf("\n");
+
+    printf("\nChecksum: %d\n\n", checksum);
+
+    for (int i = 0; i < BYTE; i++) {
+        sum += data[i];
+        printf("parityData[i] = %d, binary = ", i, data[i]);
+
+        unsigned char byte = data[i];
+        unsigned char binary[8] = {0}; 
+        for (int k = 7; k >= 0; k--) {
+            binary[k] = byte % 2; 
+            byte /= 2; 
+        }
+        for (int k = 0; k < 8; k++) {
+            printf("%d", binary[k]); 
+        }
+        printf("\n\n");
+    }
+
+    // Calculate checksum
+    unsigned char totalChecksum = 255 - (sum % 256); 
+    printf("Sum of data items = %4d, binary = ", sum);
+    p_binary(sum); 
+    printf("\n\n"); 
+
+    printf("Checksum value = %4d, binary = ", checksum);
+    p_binary(checksum); 
+    printf("\n\n");
+
+    sum += checksum;
+    printf("Sum after adding checksum = %4d, binary = ", sum);
+    p_binary(sum); 
+    printf("\n"); 
+
+    sum = 255 - (sum % 256); 
+    printf("Sum after complement = %4d, binary = ", sum);
+    p_binary(sum); 
+    printf("\n\n"); 
+
+    // Error handling
+    if (totalChecksum == checksum) {
+        printf("Checksum: No errors in transmission\n\n");
+    } else {
+        printf("Checksum: Errors in transmission\n\n");
+    }
+}
+
+void p_binary(unsigned int value) {
+    unsigned char binary[8] = {0}; 
+    for (int k = 7; k >= 0; k--) {
+        binary[k] = value % 2; 
+        value /= 2; 
+    }
+    for (int k = 0; k < 8; k++) {
+        printf("%d", binary[k]); 
+    }
+}
+
+// Two-Dimensional Parity Check 
+void two_dimensional_parity(unsigned char data[BYTE][BYTE], unsigned char h_parity[BYTE], unsigned char v_parity[BYTE]) {
+    printf("\n==> Processing Transmission Block 1\n\nData streams:\n");
+
+    for (int i = 0; i < BYTE; i++) {
+        for (int k = 0; k < BYTE; k++) {
+            printf("%3d ", data[i][k]);
+        }
+        printf("[V: %3d] [H: %3d]\n", v_parity[i], h_parity[i]);
+    }
+
+    // Vertical and horizontal parity check
+    for (int k = 0; k < BYTE; k++) {
+        printf("\n** Vertical processing transmission line %d **\n\n", k);
+        int v_count = 0;
+
+        for (int i = 0; i < BYTE; i++) {
+            unsigned char byte = data[i][k];
+            printf("val%d = %3d, ", i + 1, byte);
+
+            // Print binary of val
+            unsigned char binary[8] = {0};
+            for (int k = 7; k >= 0; k--) {
+                binary[k] = byte % 2;
+                byte /= 2;
+            }
+            for (int k = 0; k < 8; k++) {
+                printf("%d", binary[k]);
+            }
+            printf("\n");
+
+            for (int k = 0; k < 8; k++) {
+                if (binary[k] == 1) {
+                    v_count++;
+                }
+            }
+        }
+
+        unsigned char checkVParityByte = v_count % 2;
+        printf("\ncheckParityByte = %d, vertParityByte[%d] = %d\n", checkVParityByte, k, v_parity[k]);
+
+        if (checkVParityByte == v_parity[k]) {
+            printf("Transmission line %d passed vertical parity\n\n", k);
+        } else {
+            printf("Transmission line %d failed vertical parity\n\n", k);
+        }
+
+        // Horizontal Processing
+        printf("** Horizontal Processing transmission line %d **\n\n", k);
+        unsigned char h_sum = 0; 
+
+        for (int i = 0; i < BYTE; i++) {
+            unsigned char byte = data[k][i];
+            h_sum += byte;
+            printf("val%d = %3d, ", i + 1, byte);
+
+            // Print binary of val
+            unsigned char binary[8] = {0};
+            for (int k = 7; k >= 0; k--) {
+                binary[k] = byte % 2;
+                byte /= 2;
+            }
+            for (int k = 0; k < 8; k++) {
+                printf("%d", binary[k]);
+            }
+            printf("\n");
+        }
+
+        unsigned char checkParityByte = h_sum % 2;
+        printf("\ncheckParityByte = %d, horizParityByte[%d] = %d\n", checkParityByte, k, h_parity[k]);
+
+        if (checkParityByte != h_parity[k]) {
+            printf("Transmission line %d failed horizontal parity\n\n", k);
+        } else {
+            printf("Transmission line %d passed horizontal parity\n\n", k);
+        }
+    }
+}
+
+// Read parity check file
+void read_parity_check(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        printf("Error opening file");
+        return;
+    }
+    
+    unsigned char data[BYTE]; 
+    unsigned char parityBit;
+
+    for (int i = 0; i < BYTE; i++) {
+        fscanf(file, "%hhu", &data[i]);
+    }
+    fscanf(file, "%hhu", &parityBit);
+    
+    parity_check(data, parityBit);
+    fclose(file);
+}
+
+// Read checksum file
+void read_checksum(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        printf("Error opening file");
+        return;
+    }
+    
+    unsigned char data[BYTE];
+    unsigned char checksumVal;
+
+    for (int i = 0; i < BYTE; i++) {
+        fscanf(file, "%hhu", &data[i]);
+    }
+    fscanf(file, "%hhu", &checksumVal);
+    
+    checksum(data, checksumVal);
+    fclose(file);
+}
+
+// Read two-dimensional parity check file
+void read_two_dimensional_parity(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        printf("Error opening file");
+        return;
+    }
+    
+    unsigned char data[BYTE][BYTE];
+    unsigned char h_parity[BYTE] = {0};
+    unsigned char v_parity[BYTE] = {0};
+
+    for (int i = 0; i < BYTE; i++) {
+        for (int k = 0; k < BYTE; k++) {
+            fscanf(file, "%hhu", &data[i][k]);
+        }
+        fscanf(file, "%hhu", &v_parity[i]);
+        fscanf(file, "%hhu", &h_parity[i]);
+    }
+    
+    two_dimensional_parity(data, h_parity, v_parity);
+    fclose(file);
+}
